@@ -27,20 +27,20 @@
  **/
 /*jslint browser: true */
 /*global jQuery: false */
+
 (function ($) {
   'use strict';
-
   $.fn.idle = function (options) {
     var defaults = {
         idle: 60000, //idle time in ms
-        events: 'mousemove keydown mousedown touchstart', //events that will trigger the idle resetter
+        events: 'mousemove keydown mousedown touchstart wheel', //events that will trigger the idle resetter
         onIdle: function () {}, //callback function to be executed after idle time
         onActive: function () {}, //callback function to be executed after back from idleness
         onHide: function () {}, //callback function to be executed when window is hidden
         onShow: function () {}, //callback function to be executed when window is visible
         keepTracking: true, //set it to false if you want to track only the first time
         startAtIdle: false,
-        recurIdleCall: false
+        recurIdleCall: true
       },
       idle = options.startAtIdle || false,
       visible = !options.startAtIdle || true,
@@ -57,6 +57,9 @@
     });
 
     resetTimeout = function (id, settings) {
+      const now = new Date().getTime();
+      localStorage.setItem('lastActivityTime', new Date(now).toString());
+
       if (idle) {
         idle = false;
         settings.onActive.call();
@@ -68,10 +71,26 @@
     };
 
     timeout = function (settings) {
-      var timer = (settings.recurIdleCall ? setInterval : setTimeout), id;
-      id = timer(function () {
+      let timer = (settings.recurIdleCall ? setInterval : setTimeout), id;
+      let storedDateString = localStorage.getItem('lastActivityTime');
+      let storedDate = new Date(storedDateString);
+      let idleTime = new Date(storedDate);
+      idleTime.setSeconds(idleTime.getSeconds() + 1800); // set num seconds for timeout
+      id = timer(() => {
         idle = true;
-        settings.onIdle.call();
+
+        if (new Date() > idleTime) {
+          // re-check other tabs
+          let reCheckStoredDate = new Date(localStorage.getItem('lastActivityTime'));
+          let reCheckIdleTime = reCheckStoredDate.setSeconds(reCheckStoredDate.getSeconds() + 1800); // set num seconds for timeout
+          
+          if (new Date() > reCheckIdleTime) {
+            settings.onIdle.call();
+          }
+          else {
+            (idleTime = reCheckIdleTime);
+          }
+        }
       }, settings.idle);
       return id;
     };
