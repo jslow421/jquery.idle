@@ -28,6 +28,8 @@
 /*jslint browser: true */
 /*global jQuery: false */
 
+
+
 (function ($) {
   'use strict';
   $.fn.idle = function (options) {
@@ -71,18 +73,19 @@
     };
 
     timeout = function (settings) {
+      const configTimeout = window.javaScriptGlobalConst.authentication.inactivityTimerInSeconds;
       let timer = (settings.recurIdleCall ? setInterval : setTimeout), id;
       let storedDateString = localStorage.getItem('lastActivityTime');
       let storedDate = new Date(storedDateString);
       let idleTime = new Date(storedDate);
-      idleTime.setSeconds(idleTime.getSeconds() + 1800); // set num seconds for timeout
+      idleTime.setSeconds(idleTime.getSeconds() + configTimeout); // set num seconds for timeout
       id = timer(() => {
         idle = true;
 
         if (new Date() > idleTime) {
           // re-check other tabs
           let reCheckStoredDate = new Date(localStorage.getItem('lastActivityTime'));
-          let reCheckIdleTime = reCheckStoredDate.setSeconds(reCheckStoredDate.getSeconds() + 1800); // set num seconds for timeout
+          let reCheckIdleTime = reCheckStoredDate.setSeconds(reCheckStoredDate.getSeconds() + configTimeout); // set num seconds for timeout
           
           if (new Date() > reCheckIdleTime) {
             settings.onIdle.call();
